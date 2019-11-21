@@ -58,6 +58,7 @@ import Control.Monad.State.Strict
 import Data.Aeson hiding ((.=),Object)
 import qualified Data.Aeson as A
 import qualified Data.ByteString as BS
+import qualified Data.ByteString.Char8 as B8
 import qualified Data.ByteString.UTF8 as BS
 import Data.Char
 import Data.Default
@@ -66,7 +67,8 @@ import qualified Data.HashMap.Strict as HM
 import qualified Data.Map.Strict as M
 import Data.Monoid (appEndo)
 import Data.Text (Text, pack, unpack)
-import Data.Text.Encoding (encodeUtf8)
+import Data.Text.Encoding (decodeUtf8With, encodeUtf8)
+import Data.Text.Encoding.Error (lenientDecode)
 
 import Text.Trifecta as TF hiding (line,err,try,newline)
 import Text.Trifecta.Delta
@@ -311,7 +313,7 @@ loadFile f = do
   rFile .= Just computedPath
   catch (do
           pr <- TF.parseFromFileEx exprsOnly computedPath
-          src <- liftIO $ readFile computedPath
+          src <- liftIO $ unpack . decodeUtf8With lenientDecode <$> B8.readFile computedPath
           when (isPactFile f) $ rEvalState.evalRefs.rsLoaded .= HM.empty
           r <- parsedCompileEval src pr
           when (isPactFile f) $ void useReplLib
